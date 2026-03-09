@@ -1,0 +1,14 @@
+{
+  "name": "sentio-skills",
+  "owner": {
+    "name": "Poytr1"
+  },
+  "plugins": [
+    {
+      "name": "managing-sentio-processors",
+      "source": ".",
+      "description": "Skill for building blockchain data processors with the Sentio SDK — covers project setup, multi-chain processor patterns, DeFi protocols, testing, and deployment",
+      "version": "1.0.0"
+    }
+  ]
+}
