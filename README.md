@@ -1,8 +1,20 @@
 # managing-sentio-processors
 
-A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skill for building blockchain data processors with the [Sentio SDK](https://docs.sentio.xyz/).
+A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin for building blockchain data processors with the [Sentio SDK](https://docs.sentio.xyz/).
 
 ## Install
+
+### Claude Code Plugin (recommended)
+
+```bash
+# Add this repo as a marketplace source
+/plugin marketplace add sentioxyz/sentio-skills
+
+# Install the plugin
+/plugin install managing-sentio-processors
+```
+
+### ClawHub
 
 ```bash
 npx clawhub@latest install managing-sentio-processors
@@ -10,7 +22,7 @@ npx clawhub@latest install managing-sentio-processors
 
 ## What It Does
 
-This skill teaches Claude Code how to work with Sentio — a TypeScript blockchain data indexing platform. When you ask Claude Code to build a processor, it knows the full lifecycle: project setup, contract binding, handler patterns, testing, and deployment.
+This plugin teaches Claude Code how to work with Sentio — a TypeScript blockchain data indexing platform. When you ask Claude Code to build a processor, it knows the full lifecycle: project setup, contract binding, handler patterns, testing, and deployment.
 
 ### Supported Chains
 
@@ -35,6 +47,23 @@ Once installed, Claude Code automatically activates the skill when you work on S
 "Create a Sentio processor that tracks USDC transfers on Ethereum"
 "Add a Sui DEX swap tracker with volume metrics"
 "Set up a points system for staking rewards"
+```
+
+## Plugin Structure
+
+```
+sentio-skills/
+├── .claude-plugin/
+│   └── plugin.json
+├── skills/
+│   └── managing-sentio-processors/
+│       ├── SKILL.md
+│       └── references/
+│           ├── advanced-patterns.md
+│           ├── defi-patterns.md
+│           ├── store-and-points.md
+│           └── production-examples.md
+└── README.md
 ```
 
 ## Links

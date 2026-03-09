@@ -1,0 +1,12 @@
+{
+  "name": "managing-sentio-processors",
+  "description": "Skill for building blockchain data processors with the Sentio SDK — covers project setup, multi-chain processor patterns, DeFi protocols, testing, and deployment",
+  "version": "1.0.0",
+  "author": {
+    "name": "Poytr1"
+  },
+  "homepage": "https://clawhub.ai/Poytr1/managing-sentio-processors",
+  "repository": "https://github.com/sentioxyz/sentio-skills",
+  "license": "MIT",
+  "keywords": ["sentio", "blockchain", "indexing", "defi", "ethereum", "aptos", "sui", "solana"]
+}
