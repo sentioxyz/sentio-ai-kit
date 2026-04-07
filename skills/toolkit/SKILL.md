@@ -1,6 +1,6 @@
 ---
 name: sentio-toolkit
-description: Build, modify, or troubleshoot Sentio projects across processors, Sentio SQL in Data Studio, and alerting. Use for tasks involving @sentio/sdk handlers in processor.ts, sentio.yaml config, metrics/event logs/entity store, running or sharing Sentio SQL queries, or creating/updating alert rules and notification channels.
+description: Build, modify, or troubleshoot Sentio projects across processors, Sentio SQL in Data Studio, alerting, and dashboards. Use for tasks involving @sentio/sdk handlers in processor.ts, sentio.yaml config, metrics/event logs/entity store, running or sharing Sentio SQL queries, creating/updating alert rules and notification channels, or managing dashboards and panels.
 ---
 
 # sentio-toolkit
@@ -49,6 +49,21 @@ Use `npx @sentio/cli@latest` for SQL, data queries, alerts, endpoints, and proje
 - List: `sentio endpoint list --project <owner>/<slug>`
 - Test: `sentio endpoint test --project <owner>/<slug> --id <id> --args '{"min":1000}'`
 - Delete: `sentio endpoint delete --project <owner>/<slug> --id <id>`
+
+## Dashboards
+
+- List: `sentio dashboard list --project <owner>/<slug>`
+- Export: `sentio dashboard export <dashboardId> --project <owner>/<slug>`
+- Import: `sentio dashboard import <dashboardId> --project <owner>/<slug> --file dashboard.json`
+- Import from stdin: `sentio dashboard import <dashboardId> --project <owner>/<slug> --stdin`
+- Import override layout: `sentio dashboard import <dashboardId> --project <owner>/<slug> --file dashboard.json --override-layouts`
+- Add SQL panel: `sentio dashboard add-panel <dashboardId> --project <owner>/<slug> --panel-name "Top Holders" --type TABLE --sql "SELECT * FROM CoinBalance ORDER BY balance DESC LIMIT 50"`
+- Add event panel: `sentio dashboard add-panel <dashboardId> --project <owner>/<slug> --panel-name "Transfer Count" --type LINE --event Transfer --aggr total`
+- Add metric panel: `sentio dashboard add-panel <dashboardId> --project <owner>/<slug> --panel-name "ETH Price" --type LINE --metric cbETH_price`
+- Panel with filters/groups: `--filter amount>1000 --group-by meta.address --func 'topk(5)'`
+- Chart types: `TABLE`, `LINE`, `BAR`, `PIE`, `QUERY_VALUE`, `AREA`, `BAR_GAUGE`, `SCATTER`
+- Event aggr options: `total`, `unique`, `AAU`, `DAU`, `WAU`, `MAU`
+- Metric aggr options: `avg`, `sum`, `min`, `max`, `count`
 
 ## Project & processor management
 
