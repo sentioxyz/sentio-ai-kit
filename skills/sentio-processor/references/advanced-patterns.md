@@ -31,7 +31,7 @@ Bind multiple different contract types:
 // Factory contract
 UniswapFactoryProcessor.bind({ address: FACTORY_ADDRESS })
   .onEventPoolCreated(async (event, ctx) => {
-    ctx.meter.Counter("pools_created").add(1)
+    ctx.meter.Counter("pools_created_total").add(1)
   })
 
 // Individual pool contracts
@@ -101,7 +101,7 @@ import { GlobalProcessor } from '@sentio/sdk/eth'
 GlobalProcessor.bind({ network: EthChainId.ETHEREUM })
   .onBlockInterval(async (block, ctx) => {
     ctx.meter.Gauge("gas_used").record(block.gasUsed)
-    ctx.meter.Gauge("tx_count").record(block.transactions.length)
+    ctx.meter.Gauge("tx_per_block").record(block.transactions.length)
   }, 1)  // Every block
   .onTransaction(async (tx, ctx) => {
     if (tx.value > 0n) {
@@ -190,7 +190,7 @@ SuiObjectProcessor.bind({ objectId: OBJECT_ID })
       BUILTIN_TYPES.U64_TYPE,  // key type
       targetType                // value type
     )
-    ctx.meter.Gauge('field_count').record(fields.length)
+    ctx.meter.Gauge('dynamic_fields').record(fields.length)
     for (const field of fields) {
       // Process dynamic field data
     }

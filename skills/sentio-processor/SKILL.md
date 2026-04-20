@@ -158,7 +158,7 @@ import { EthChainId } from '@sentio/chain'
 import { ERC20Processor } from '@sentio/sdk/eth/builtin'
 // Or generated: import { MyContractProcessor } from './types/eth/mycontract.js'
 
-const transfers = Counter.register('transfer_count')
+const transfers = Counter.register('transfers')
 
 ERC20Processor.bind({
   address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
@@ -309,6 +309,15 @@ UniswapV2FactoryProcessor.bind({
 
 ## Metrics & Events
 
+**CRITICAL — Metric Naming:** Names MUST NOT end with reserved suffixes: `_count`, `_sum`, `_avg`, `_min`, `_max`, `_last`. These are appended automatically by Sentio. Error: `COUNTER name "X" is invalid, cannot use [_count _sum _avg _min _max _last] as the suffix: invalid meta`
+
+```
+❌ Counter.register('transfer_count')    → invalid suffix _count
+❌ ctx.meter.Counter('pool_sum')         → invalid suffix _sum
+✅ Counter.register('transfers')
+✅ ctx.meter.Counter('pools_created')
+```
+
 ```typescript
 // Global registration (recommended)
 const counter = Counter.register('name', { unit: 'token' })
@@ -332,6 +341,8 @@ ctx.eventLogger.emit('EventName', {
   distinctId: address,     // Primary entity ID (used for user-level analytics)
   message: 'description',
   // ... arbitrary key-value attributes
+  // IMPORTANT: Numeric attributes used as time series metrics must be number or BigDecimal.
+  // Passing string/undefined/null for numeric fields causes "invalid time series data" errors.
 })
 
 // Exporter (export to external systems via webhook)
@@ -391,7 +402,7 @@ before(async () => { await service.start() })
 
 // Ethereum
 const resp = await service.eth.testLog(mockTransferLog('0x...', { from, to, value }))
-assert.equal(firstCounterValue(resp.result, 'transfer_count'), 1n)
+assert.equal(firstCounterValue(resp.result, 'transfers'), 1n)
 ```
 
 | Chain | Facet | Key Methods |
@@ -442,6 +453,8 @@ my-project/
 
 | Mistake | Fix |
 |---------|-----|
+| Metric name ends with `_count`, `_sum`, `_avg`, `_min`, `_max`, `_last` | Use a different name: `transfers` not `transfer_count`, `pools_created` not `pool_count` |
+| "invalid time series data" in eventLogger | Ensure numeric fields are `number` or `BigDecimal`, not `string`/`undefined`/`null`; use `\|\| 0` for fallible prices |
 | Writing processor before `sentio gen` | Always `sentio add` then `sentio gen` first |
 | Wrong import path for generated types | Use `./types/{chain}/{name}.js` (`.js` extension for ESM) |
 | Forgetting `.scaleDown(decimals)` | `.scaleDown(18)` for ETH, `.scaleDown(6)` for USDC |

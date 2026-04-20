@@ -9,7 +9,7 @@ import { Counter } from '@sentio/sdk'
 import { EthChainId } from '@sentio/chain'
 import { ERC20Processor } from '@sentio/sdk/eth/builtin'
 
-const transfers = Counter.register('transfer_count')
+const transfers = Counter.register('transfers')
 
 ERC20Processor.bind({
   address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
@@ -129,7 +129,7 @@ let tokenMap = new Map<string, Promise<token.TokenInfo | undefined>>()
 CHAINS.forEach((addr, chainId) => {
   PoolProcessor.bind({ address: addr, network: chainId })
     .onEventSupply(async (evt, ctx) => {
-      ctx.meter.Counter("supply_counter").add(1)
+      ctx.meter.Counter("supplies").add(1)
       ctx.eventLogger.emit("supply", {
         distinctId: evt.args.user,
         amount: evt.args.amount,
@@ -151,7 +151,7 @@ CHAINS.forEach((addr, chainId) => {
       })
     })
     .onEventRepay(async (evt, ctx) => {
-      ctx.meter.Counter("repay_counter").add(1)
+      ctx.meter.Counter("repays").add(1)
       ctx.eventLogger.emit("repay", {
         distinctId: evt.args.user,
         amount: evt.args.amount,
@@ -231,7 +231,7 @@ import { getPriceByType } from "@sentio/sdk/utils"
 
 factory.bind({})
   .onEventCreatePoolEvent(async (event, ctx) => {
-    ctx.meter.Counter("create_pool_counter").add(1)
+    ctx.meter.Counter("pools_created").add(1)
     ctx.eventLogger.emit("CreatePoolEvent", {
       distinctId: event.sender,
       pool_id: event.data_decoded.pool_id,

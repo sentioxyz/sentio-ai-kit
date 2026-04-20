@@ -110,7 +110,7 @@ const CHAIN_ADDRESS_MAP = new Map<EthChainId, string>([
 CHAIN_ADDRESS_MAP.forEach((addr, chainId) => {
   PoolProcessor.bind({ address: addr, network: chainId })
     .onEventSupply(async (evt, ctx) => {
-      ctx.meter.Counter("supply_counter").add(1)
+      ctx.meter.Counter("supplies").add(1)
       ctx.eventLogger.emit("supply", {
         distinctId: evt.args.user,
         amount: evt.args.amount,
@@ -203,7 +203,7 @@ import { pool, factory } from "./types/sui/cetus.js"
 
 factory.bind({})
   .onEventCreatePoolEvent(async (event, ctx) => {
-    ctx.meter.Counter("create_pool_counter").add(1)
+    ctx.meter.Counter("pools_created").add(1)
     const pool_id = event.data_decoded.pool_id
     ctx.eventLogger.emit("CreatePoolEvent", {
       distinctId: event.sender,
