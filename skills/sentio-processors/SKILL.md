@@ -26,11 +26,12 @@ Sentio SDK is a TypeScript blockchain data indexing platform. Processors handle 
 
 This skill follows a layered approach:
 
-1. **This file** — CLI commands, core patterns, quick reference
+1. **This file** — CLI commands, core patterns, all handler types, metrics/events/store overview, best practices
 2. **[references/advanced-patterns.md](references/advanced-patterns.md)** — Multi-contract binding, GlobalProcessor, lazy caching, view calls, partition keys, baseLabels
 3. **[references/defi-patterns.md](references/defi-patterns.md)** — Price feeds, DEX/AMM, lending protocols, TVL tracking, Aptos/Sui DEX helpers
-4. **[references/store-and-points.md](references/store-and-points.md)** — Store entities with schema.graphql, GLOBAL_CONFIG.execution, points/rewards systems
-5. **[references/production-examples.md](references/production-examples.md)** — 7 complete production processor examples (Uniswap, AAVE, Cetus, LiquidSwap, Lombard points, Scallop)
+4. **[references/store-and-points.md](references/store-and-points.md)** — Store schema advanced features (relationships, timeseries, indexes, iterators, filter operators)
+5. **[references/position-tracking-templates.md](references/position-tracking-templates.md)** — 10 protocol-specific points/position tracking templates (Simple Holding, Aave, Morpho, Vault/LP, Uni V3, Pendle, Compound, NFT, Uni V2, Uni V4)
+6. **[references/production-examples.md](references/production-examples.md)** — 7 complete production processor examples (Uniswap, AAVE, Cetus, LiquidSwap, Lombard points, Scallop)
 
 ## Project Lifecycle
 
@@ -73,8 +74,9 @@ sentio login --host test                  # Target test environment
 
 sentio upload                             # Build + deploy
 sentio upload --skip-build                # Deploy only
-sentio upload --continue-from <ver>       # Continue from previous version
+sentio upload --continue-from <ver>       # Hot-swap without re-indexing
 sentio upload --checkpoint "1:18000000"   # Rollback to specific block
+sentio upload --num-workers=4             # Parallel workers for compute-heavy processors
 ```
 
 ### 4. AI Processor Generation
@@ -82,6 +84,37 @@ sentio upload --checkpoint "1:18000000"   # Rollback to specific block
 ```bash
 sentio generate-processor --prompt "Track token transfers and calculate volume"
 sentio gen-processor --prompt "Monitor DEX swaps"  # Short alias
+```
+
+## package.json
+
+Recommend **yarn** over npm. With npm you may hit `BaseContract` / `DeferredTopicFilter` type conflicts (TS2344 due to duplicate ethers).
+
+```json
+{
+  "name": "project-name",
+  "type": "module",
+  "scripts": {
+    "build": "sentio build",
+    "gen": "sentio gen",
+    "upload": "sentio upload",
+    "test": "sentio test"
+  },
+  "dependencies": {
+    "@sentio/sdk": "^3.4.0"
+  },
+  "devDependencies": {
+    "@sentio/cli": "^3.4.0",
+    "typescript": "^5.4.5"
+  }
+}
+```
+
+If using npm and hitting ethers type conflicts, add:
+```json
+"overrides": {
+  "ethers": "npm:@sentio/ethers@6.13.1-patch.4"
+}
 ```
 
 ## sentio.yaml Quick Reference
@@ -100,6 +133,10 @@ contracts:
     address: "0xdee9..."
     name: "deepbook"
 
+networkOverrides:                # Redirect chain ID to custom RPC
+  - chain: '2390'
+    host: "https://rpc.tac.build"
+
 variables:                       # Runtime env vars
   - key: API_KEY
     value: xxx
@@ -110,6 +147,8 @@ numWorkers: 1
 ```
 
 ## Processor Patterns by Chain
+
+**Proxy contracts:** Use the **implementation contract's ABI** while binding to the **proxy address**.
 
 ### Ethereum / EVM
 
@@ -138,7 +177,44 @@ ERC20Processor.bind({
   .onTimeInterval(async (block, ctx) => {}, 60, 240)
 ```
 
-**Handlers:** `onEvent*`, `onBlockInterval`, `onTimeInterval`, `onTransaction`, `onTrace`
+**Handlers:** `onEvent*`, `onBlockInterval`, `onTimeInterval`, `onTransaction`, `onTrace`, `onCallXxx`
+
+#### Event Filtering
+
+Filter events to only process matching ones (e.g., only mints):
+
+```typescript
+const mintFilter = ERC20Processor.filters.Transfer(
+  "0x0000000000000000000000000000000000000000", // from = null address (mint)
+  null  // any recipient
+);
+
+ERC20Processor.bind({ address: TOKEN, network: NETWORK })
+  .onEventTransfer(async (event, ctx) => {
+    // only mint events reach here
+  }, mintFilter);
+```
+
+#### Generic Event Handler
+
+Catches any event from the contract:
+
+```typescript
+.onEvent(async (event, ctx) => {
+  // event.eventName to determine which event
+});
+```
+
+#### Function Call Handler (`onCallXxx`)
+
+Triggers on internal function calls (trace-based). Access args and return values:
+
+```typescript
+MyContractProcessor.bind({ address: CONTRACT, network: NETWORK })
+  .onCallDeposit(async (call, ctx) => {
+    // call.args, call.returnValue, call.error
+  });
+```
 
 **GlobalProcessor:** `GlobalProcessor.bind({ network }).onBlockInterval(handler)`
 
@@ -201,6 +277,36 @@ StarknetProcessor.bind({ address: '0x...', network: StarknetChainId.STARKNET_MAI
   })
 ```
 
+## Factory Pattern (ProcessorTemplate)
+
+For dynamically-created contracts (e.g., DEX pair factory):
+
+```typescript
+import { UniswapV2PairProcessorTemplate } from "./types/eth/uniswapv2pair.js";
+import { UniswapV2FactoryProcessor } from "./types/eth/uniswapv2factory.js";
+
+// 1. Define template with handlers
+const pairTemplate = new UniswapV2PairProcessorTemplate()
+  .onEventSwap(async (event, ctx) => {
+    ctx.meter.Counter("swap_volume").add(event.args.amount0Out);
+  })
+  .onEventSync(async (event, ctx) => {
+    ctx.meter.Gauge("reserve0").record(event.args.reserve0);
+  });
+
+// 2. Bind factory and dynamically bind new pairs
+UniswapV2FactoryProcessor.bind({
+  address: FACTORY_ADDRESS,
+  network: NETWORK,
+})
+  .onEventPairCreated(async (event, ctx) => {
+    pairTemplate.bind(
+      { address: event.args.pair, startBlock: ctx.blockNumber },
+      ctx
+    );
+  });
+```
+
 ## Metrics & Events
 
 ```typescript
@@ -215,16 +321,24 @@ ctx.meter.Gauge('name').record(value, { label: 'value' })
 // Sparse gauge (high cardinality — many pools/tokens)
 const vol = Gauge.register("vol", {
   sparse: true,
-  aggregationConfig: { intervalInMinutes: [60] }
+  aggregationConfig: {
+    intervalInMinutes: [60],
+    discardOrigin: true,  // only keep aggregated vol_count, vol_sum
+  },
 })
 
 // Event logging
 ctx.eventLogger.emit('EventName', {
-  distinctId: address,     // Primary entity ID
+  distinctId: address,     // Primary entity ID (used for user-level analytics)
   message: 'description',
   // ... arbitrary key-value attributes
 })
+
+// Exporter (export to external systems via webhook)
+ctx.exporter.emit({ key: "value" })
 ```
+
+**Label cardinality warning:** ~10,000 unique series limit per metric. NEVER use wallet addresses, tx hashes, or token IDs as labels. Use event logs or entities for high-cardinality data instead.
 
 ## Store (Database) API
 
@@ -308,6 +422,21 @@ my-project/
     schema/                # Auto-generated store entities
   dist/lib.js              # Bundled output (sentio build)
 ```
+
+## Best Practices
+
+1. **Use `sequential: true`** when handlers share state via entity store
+2. **Do NOT use global variables** for persistent state — use `ctx.store`
+3. **Use `startBlock`** to skip irrelevant history and reduce backfill cost
+4. **Prefer Metrics over Logs/Entities** for aggregated numerical data (lower cost)
+5. **Never use addresses/hashes as metric labels** — ~10k series limit per metric
+6. **Use event filters** (`Processor.filters`) to reduce unnecessary handler executions
+7. **Increase backfill intervals** to the largest acceptable value for cost reduction
+8. **Use `listIterator()`** instead of `list()` for large entity datasets
+9. **Use `Promise.all`** for parallel contract calls and entity processing
+10. **Use `BigDecimal`** and `scaleDown()` for precision — avoid floating point
+11. **Filter null addresses** with `isNullAddress()` for mint/burn events
+12. **Skip self-transfers** — `if (from == to) return;`
 
 ## Common Mistakes
 
