@@ -42,7 +42,7 @@ sentio create → sentio add → sentio gen → write processor → sentio test 
 ### 1. Initialize Project
 
 ```bash
-sentio create <project-name> --chain-type <type> --chain-id <id>
+npx @sentio/cli create <project-name> --chain-type <type> --chain-id <id>
 ```
 
 | Flag | Description | Default |
@@ -70,7 +70,6 @@ sentio build                                           # Full: gen + typecheck +
 ```bash
 sentio login                              # OAuth browser flow (prod)
 sentio login --api-key <key>              # API key auth
-sentio login --host test                  # Target test environment
 
 sentio upload                             # Build + deploy
 sentio upload --skip-build                # Deploy only
