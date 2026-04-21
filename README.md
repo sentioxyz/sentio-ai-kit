@@ -17,7 +17,11 @@ A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin with skil
 ### ClawHub
 
 ```bash
-npx clawhub@latest install sentio-ai-kit
+# Install Skill to write and debug Sentio processor
+npx clawhub@latest install sentio-processor
+
+# Install Skill to interact with Sentio queries, dashboard, alerts, etc
+npx clawhub@latest install sentio-platform
 ```
 
 ## What It Does

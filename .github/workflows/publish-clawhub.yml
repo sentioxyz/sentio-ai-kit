@@ -1,0 +1,59 @@
+name: Publish skills to ClawHub
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - '.github/workflows/publish-clawhub.yml'
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type for updates'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      changelog:
+        description: 'Changelog message (optional)'
+        required: false
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Authenticate with ClawHub
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+        run: |
+          if [ -z "$CLAWHUB_TOKEN" ]; then
+            echo "::error::CLAWHUB_TOKEN secret is not set"
+            exit 1
+          fi
+          npx clawhub@latest login --token "$CLAWHUB_TOKEN" --no-browser
+          npx clawhub@latest whoami
+
+      - name: Publish skills (sync)
+        env:
+          BUMP: ${{ github.event.inputs.bump || 'patch' }}
+          CHANGELOG: ${{ github.event.inputs.changelog }}
+        run: |
+          ARGS=(sync --all --bump "$BUMP")
+          if [ -n "$CHANGELOG" ]; then
+            ARGS+=(--changelog "$CHANGELOG")
+          fi
+          npx clawhub@latest "${ARGS[@]}"
