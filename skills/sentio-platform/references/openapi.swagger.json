@@ -8904,6 +8904,10 @@
             "$ref": "#/definitions/web_service.OverlayGraph"
           },
           "title": "Overlay graphs for multi-axis support (max 3)"
+        },
+        "group": {
+          "$ref": "#/definitions/web_service.Group",
+          "description": "Set when type == GROUP \u2014 configures the container's title and child layout."
         }
       }
     },
@@ -8916,7 +8920,8 @@
         "INSIGHTS",
         "EVENTS",
         "RETENTION",
-        "SQL"
+        "SQL",
+        "GROUP"
       ],
       "default": "METRICS"
     },
@@ -9446,7 +9451,8 @@
         "QUERY_VALUE",
         "PIE",
         "NOTE",
-        "SCATTER"
+        "SCATTER",
+        "GROUP"
       ],
       "default": "LINE"
     },
@@ -9786,6 +9792,22 @@
         }
       }
     },
+    "web_service.Group": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "collapsed": {
+          "type": "boolean"
+        },
+        "childLayouts": {
+          "$ref": "#/definitions/web_service.Dashboard.ResponsiveLayouts",
+          "description": "Grid layout of the child panels inside this group, keyed by responsive\nbreakpoint (same shape as Dashboard.responsiveLayouts)."
+        }
+      },
+      "description": "Configuration for a GROUP-typed Panel \u2014 a collapsible container that holds\nother panels referencing it via Panel.group_id. Groups cannot nest."
+    },
     "web_service.ImportDashboardRequest": {
       "type": "object",
       "properties": {
@@ -9947,6 +9969,10 @@
         },
         "updater": {
           "$ref": "#/definitions/common.UserInfo"
+        },
+        "groupId": {
+          "type": "string",
+          "description": "When non-empty, this panel renders inside the Group panel identified by group_id.\nGROUP-typed panels must keep this field empty (groups cannot nest)."
         }
       }
     },
