@@ -9804,9 +9804,25 @@
         "childLayouts": {
           "$ref": "#/definitions/web_service.Dashboard.ResponsiveLayouts",
           "description": "Grid layout of the child panels inside this group, keyed by responsive\nbreakpoint (same shape as Dashboard.responsiveLayouts)."
+        },
+        "style": {
+          "$ref": "#/definitions/web_service.Group.Style"
+        },
+        "highlightColor": {
+          "type": "string",
+          "description": "Palette key (e.g. \"green\", \"purple\") used to derive the header\nbackground. Empty string keeps the theme default."
         }
       },
       "description": "Configuration for a GROUP-typed Panel \u2014 a collapsible container that holds\nother panels referencing it via Panel.group_id. Groups cannot nest."
+    },
+    "web_service.Group.Style": {
+      "type": "string",
+      "enum": [
+        "DEFAULT",
+        "EMPHASIS"
+      ],
+      "default": "DEFAULT",
+      "description": "Visual treatment for the Group's header card. Default = plain border;\nEmphasis = solid highlight_color tint behind the title row."
     },
     "web_service.ImportDashboardRequest": {
       "type": "object",
