@@ -2187,32 +2187,6 @@
         ]
       }
     },
-    "/v1/solidity/estimated_gas_price": {
-      "get": {
-        "summary": "Estimate gas price",
-        "operationId": "GetEstimatedGasPrice",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/solidity_service.GetEstimatedGasPriceResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "chainId",
-            "description": "Current support chain id: 1",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Debug and Simulation"
-        ]
-      }
-    },
     "/v1/solidity/{owner}/{slug}/fork": {
       "get": {
         "summary": "List all forks",
@@ -8107,34 +8081,6 @@
         }
       }
     },
-    "solidity_service.BlockPrice": {
-      "type": "object",
-      "properties": {
-        "blockNumber": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "estimatedTransactionCount": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "baseFeePerGas": {
-          "type": "number",
-          "format": "double"
-        },
-        "blobBaseFeePerGas": {
-          "type": "number",
-          "format": "double"
-        },
-        "estimatedPrices": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/solidity_service.EstimatedPrice"
-          }
-        }
-      }
-    },
     "solidity_service.ChainIdentifier": {
       "type": "object",
       "properties": {
@@ -8151,27 +8097,6 @@
       "properties": {
         "fork": {
           "$ref": "#/definitions/solidity_service.Fork"
-        }
-      }
-    },
-    "solidity_service.EstimatedPrice": {
-      "type": "object",
-      "properties": {
-        "confidence": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "price": {
-          "type": "number",
-          "format": "double"
-        },
-        "maxPriorityFeePerGas": {
-          "type": "number",
-          "format": "double"
-        },
-        "maxFeePerGas": {
-          "type": "number",
-          "format": "double"
         }
       }
     },
@@ -8307,39 +8232,6 @@
         "EXTERNAL"
       ],
       "default": "MANAGED"
-    },
-    "solidity_service.GetEstimatedGasPriceResponse": {
-      "type": "object",
-      "properties": {
-        "system": {
-          "type": "string"
-        },
-        "network": {
-          "type": "string"
-        },
-        "unit": {
-          "type": "string"
-        },
-        "maxPrice": {
-          "type": "number",
-          "format": "double"
-        },
-        "currentBlockNumber": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "msSinceLastBlock": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "blockPrices": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/solidity_service.BlockPrice"
-          }
-        }
-      }
     },
     "solidity_service.GetForkInfoResponse": {
       "type": "object",
