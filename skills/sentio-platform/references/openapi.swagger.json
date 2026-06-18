@@ -3439,6 +3439,278 @@
           "Web"
         ]
       }
+    },
+    "/api/v2/prices": {
+      "get": {
+        "summary": "Returns the price of a single asset at a given timestamp, or candidates when the asset ref is ambiguous.",
+        "operationId": "GetPriceV2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/price_service.GetPriceV2Response"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "asset.assetId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "asset.address.chain",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "asset.address.address",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "asset.symbol",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "assetClass",
+            "description": "Optional filter to narrow symbol resolution to a single asset class.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "/api/v2/prices/assets": {
+      "get": {
+        "summary": "Lists known assets with pagination and optional search/chain/class filters.",
+        "operationId": "ListAssetsV2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/price_service.ListAssetsV2Response"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "searchQuery",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "assetClass",
+            "description": "Optional filter to narrow symbol resolution to a single asset class.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "/api/v2/prices/assets/add_by_gecko": {
+      "post": {
+        "summary": "Adds a new asset by its CoinGecko id.",
+        "operationId": "AddAssetByGecko",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/price_service.AddAssetByGeckoResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/price_service.AddAssetByGeckoRequest"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/prices/assets/resolve": {
+      "get": {
+        "summary": "Resolves an asset ref (symbol/address/id) to the matching asset candidates.",
+        "operationId": "ResolveAssets",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/price_service.ResolveAssetsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "asset.assetId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "asset.address.chain",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "asset.address.address",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "asset.symbol",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "assetClass",
+            "description": "Optional filter to narrow symbol resolution to a single asset class.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "/api/v2/prices/batch": {
+      "post": {
+        "summary": "Prices multiple assets at multiple timestamps in one call, grouping results per asset.",
+        "operationId": "BatchGetPricesV2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/price_service.BatchGetPricesV2Response"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "Cross-product request: each entry in `assets` is priced at each entry in `timestamps`.\nThe response groups the results per asset as a PriceSeries (one point per timestamp).\nIf `timestamps` is empty, the current price is used for every asset.\nUnlike GetPriceSeriesV2 (which returns a continuous range for one asset), this returns\nonly the discrete requested timestamps, across many assets.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/price_service.BatchGetPricesV2Request"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/prices/series": {
+      "get": {
+        "summary": "Returns a continuous price series for a single asset over a [start, end] time range.",
+        "operationId": "GetPriceSeriesV2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/price_service.GetPriceSeriesV2Response"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "asset.assetId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "asset.address.chain",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "asset.address.address",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "asset.symbol",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "assetClass",
+            "description": "Optional filter to narrow symbol resolution to a single asset class.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      }
     }
   },
   "definitions": {
@@ -7528,6 +7800,56 @@
         }
       }
     },
+    "price_service.AddAssetByGeckoRequest": {
+      "type": "object",
+      "properties": {
+        "coingeckoId": {
+          "type": "string"
+        }
+      }
+    },
+    "price_service.AddAssetByGeckoResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/price_service.AddAssetByGeckoResponse.Status"
+        },
+        "message": {
+          "type": "string"
+        },
+        "assetId": {
+          "type": "string"
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "currentPrice": {
+          "type": "number",
+          "format": "double"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/price_service.AddressID"
+          }
+        }
+      }
+    },
+    "price_service.AddAssetByGeckoResponse.Status": {
+      "type": "string",
+      "enum": [
+        "OK",
+        "ALREADY_EXISTS",
+        "GECKO_NOT_FOUND",
+        "GECKO_RETURN_NON_SUPPORTED_CHAIN"
+      ],
+      "default": "OK"
+    },
     "price_service.AddCoinByGeckoRequest": {
       "type": "object",
       "properties": {
@@ -7576,6 +7898,59 @@
         "GECKO_HAS_DUPLICATE_SYMBOL"
       ],
       "default": "OK"
+    },
+    "price_service.AddressID": {
+      "type": "object",
+      "properties": {
+        "chain": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        }
+      }
+    },
+    "price_service.AssetCandidate": {
+      "type": "object",
+      "properties": {
+        "assetId": {
+          "type": "string"
+        },
+        "assetClass": {
+          "type": "string"
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "marketCap": {
+          "type": "number",
+          "format": "double"
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/price_service.AddressID"
+          }
+        }
+      }
+    },
+    "price_service.AssetRef": {
+      "type": "object",
+      "properties": {
+        "assetId": {
+          "type": "string"
+        },
+        "address": {
+          "$ref": "#/definitions/price_service.AddressID"
+        },
+        "symbol": {
+          "type": "string"
+        }
+      }
     },
     "price_service.BatchGetPricesRequest": {
       "type": "object",
@@ -7634,6 +8009,70 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/price_service.GetPriceResponse"
+          }
+        }
+      }
+    },
+    "price_service.BatchGetPricesV2Request": {
+      "type": "object",
+      "properties": {
+        "assets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/price_service.AssetRef"
+          }
+        },
+        "timestamps": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "description": "Cross-product request: each entry in `assets` is priced at each entry in `timestamps`.\nThe response groups the results per asset as a PriceSeries (one point per timestamp).\nIf `timestamps` is empty, the current price is used for every asset.\nUnlike GetPriceSeriesV2 (which returns a continuous range for one asset), this returns\nonly the discrete requested timestamps, across many assets."
+    },
+    "price_service.BatchGetPricesV2Response": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/price_service.BatchGetPricesV2Response.Item"
+          }
+        }
+      }
+    },
+    "price_service.BatchGetPricesV2Response.Item": {
+      "type": "object",
+      "properties": {
+        "asset": {
+          "$ref": "#/definitions/price_service.AssetRef"
+        },
+        "series": {
+          "$ref": "#/definitions/price_service.PriceSeries"
+        },
+        "candidates": {
+          "$ref": "#/definitions/price_service.CandidateList"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "price_service.CandidateList": {
+      "type": "object",
+      "properties": {
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/price_service.AssetCandidate"
           }
         }
       }
@@ -7720,6 +8159,40 @@
       },
       "description": "GetPriceResponse is the response for GetPrice."
     },
+    "price_service.GetPriceSeriesV2Response": {
+      "type": "object",
+      "properties": {
+        "series": {
+          "$ref": "#/definitions/price_service.PriceSeries"
+        },
+        "candidates": {
+          "$ref": "#/definitions/price_service.CandidateList"
+        }
+      }
+    },
+    "price_service.GetPriceV2Response": {
+      "type": "object",
+      "properties": {
+        "price": {
+          "$ref": "#/definitions/price_service.PricePoint"
+        },
+        "candidates": {
+          "$ref": "#/definitions/price_service.CandidateList"
+        }
+      }
+    },
+    "price_service.ListAssetsV2Response": {
+      "type": "object",
+      "properties": {
+        "assets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/price_service.AssetCandidate"
+          }
+        }
+      }
+    },
     "price_service.ListCoinsResponse": {
       "type": "object",
       "properties": {
@@ -7736,6 +8209,55 @@
             "$ref": "#/definitions/price_service.CoinID"
           },
           "title": "map from symbol to address, only returned when chain is set"
+        }
+      }
+    },
+    "price_service.PricePoint": {
+      "type": "object",
+      "properties": {
+        "assetId": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number",
+          "format": "double"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
+    "price_service.PriceSeries": {
+      "type": "object",
+      "properties": {
+        "assetId": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/price_service.PricePoint"
+          }
+        }
+      }
+    },
+    "price_service.ResolveAssetsResponse": {
+      "type": "object",
+      "properties": {
+        "assets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/price_service.AssetCandidate"
+          }
         }
       }
     },
