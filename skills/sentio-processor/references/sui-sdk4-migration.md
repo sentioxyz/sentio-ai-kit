@@ -2,6 +2,17 @@
 
 Use this when **upgrading a Sui processor to Sentio SDK 4**, or writing one that touches **raw** transaction / object / event structures (reading fields off `ctx.transaction`, walking programmable-transaction commands, decoding an object from `ctx.client.getObject`, or parsing Move type strings).
 
+## SDK 4 is a multi-chain major — not just Sui
+
+Most of this doc covers the Sui gRPC raw-data shapes, which are the largest source of processor code changes. But SDK 4 is a breaking major across the board, so an upgrade also involves:
+
+- **Bump deps to `^4.0.0`.** Set both `@sentio/sdk` and `@sentio/cli` to `^4.0.0` (the `latest` npm tag is now `4.x`), then `sentio gen` to regenerate bindings.
+- **Solana migrated to `@anchor-lang/core` + `@solana/kit`.** If your processor decodes instructions with an Anchor coder, import `BorshInstructionCoder` / `Idl` / `Instruction` from `@sentio/sdk/solana` instead of `@coral-xyz/anchor` (`import { BorshInstructionCoder, type Idl } from '@sentio/sdk/solana'`).
+- **Proto/RPC stack swapped to protobuf-es + connect-es** (from ts-proto + nice-grpc). This is internal to the runtime, but if you import directly from `@sentio/protos` (e.g. constructing proto messages in tests), the API changed: `create(FooSchema, init)` instead of `Foo.fromPartial`, `toBinary`/`fromBinary`/`fromJson(FooSchema, …)` for (de)serialization, and `oneof` fields are discriminated unions.
+- **The v3 back-compat layer is gone.** The SDK 4 runtime no longer patches old (v3) processor shapes and drops deprecated proto fields, so a v3 processor won't run unmodified on a v4 driver — you must actually migrate, not just rely on the runtime papering over differences.
+
+The rest of this doc is the Sui-specific deep dive.
+
 ## Overview
 
 On **SDK 4**, Sui processors fetch on-chain data over **gRPC**. The decoded values from typed handlers are unchanged — the SDK normalizes them. But any code that reaches into **raw** transaction, event, or object structures now sees the **gRPC protobuf shapes**, which differ from the older JSON-RPC shapes in field names, nesting, `oneof` unions, and string formatting.
@@ -23,6 +34,8 @@ This is a fork of an upstream schema that evolves, so field names/shapes can cha
 - Logic that only uses decoded values (amounts, metrics, store entities).
 
 You only adapt code that reads **raw** structures (`ctx.transaction.*` beyond `data_decoded`, objects from `ctx.client`, type strings).
+
+**Exception — `onObjectChange`:** the `changes` array passed to object-change handlers (`SuiObjectTypeProcessor.bind(...).onObjectChange((changes, ctx) => …)`) is no longer the JSON-RPC object shape — on SDK 4 it is the unified `SuiClientTypes.ChangedObject[]` from `@mysten/sui`. If your handler reads fields off those entries (object type, owner, id), re-check them against the unified type; `onEventXxx` decoded payloads are unaffected.
 
 ## protobuf `oneof` pattern
 
