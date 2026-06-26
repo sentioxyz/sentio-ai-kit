@@ -69,8 +69,8 @@ Raw type strings carry two gRPC-vs-JSON-RPC differences. Do **not** write parser
 
 1. **No space after commas** in generic args. gRPC emits `Pool<A,B>`; JSON-RPC emitted `Pool<A, B>`. Regexes that relied on whitespace will mis-split.
    - Split top-level type args by **bracket depth** (only the comma at depth 0), which also handles nested generics.
-2. **Address representation differs.** gRPC normalizes every address to the full 32-byte (64-hex) zero-padded form. JSON-RPC used the Move **AIP-40** canonical display, where "special" addresses `0x0`–`0xf` render short (`0x2`) and all others render as full 64-hex.
-   - If you need a canonical/comparable form (or to match data produced under the older path), normalize explicitly. AIP-40 rule: strip leading zeros; if the result is a single hex digit (≤ `0xf`) keep it short, otherwise pad to 64. Reference: https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-40.md
+2. **Address representation differs.** gRPC renders every address in the **full 32-byte (64-hex) form** — `0x` + 64 hex chars (Sui guarantees address outputs are the full 66-char string). Earlier JSON-RPC strings could spell the same address with leading zeros stripped (e.g. `0x2::sui::SUI` vs `0x0000…0002::sui::SUI`). So the **same coin can appear with different address spellings across SDK versions / data sources**, and exact string equality is not reliable.
+   - If you need to compare type strings, or match against data produced under an older path, **normalize first** to a single canonical form. `@mysten/sui` provides `normalizeStructTag` / `normalizeSuiAddress` (both pad addresses to the full 64-hex form); run both sides through the same normalizer before comparing.
 
 ```ts
 // Extract top-level generic type args from a struct type string,
