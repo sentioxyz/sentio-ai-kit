@@ -67,7 +67,7 @@ Request decoded contents explicitly (`include: { json: true }`); read fields off
 
 Raw type strings carry two gRPC-vs-JSON-RPC differences. Do **not** write parsers that assume the JSON-RPC text layout:
 
-1. **No space after commas** in generic args. gRPC emits `Pool<A,B>`; JSON-RPC emitted `Pool<A, B>`. Regexes that relied on whitespace will mis-split.
+1. **Comma separator differs.** Between generic args, gRPC uses `,` (no space) → `Pool<A,B>`, while JSON-RPC uses `, ` (comma + space) → `Pool<A, B>`. Regexes that rely on whitespace will mis-split. This comes from the same two formatters as the address difference below: move's `StructTag::to_canonical_display` joins type args with `","` ([`language_storage.rs`](https://github.com/MystenLabs/sui/blob/main/external-crates/move/crates/move-core-types/src/language_storage.rs)), whereas Sui's `to_sui_struct_tag_string` joins with `", "` ([`sui_serde.rs`](https://github.com/MystenLabs/sui/blob/main/crates/sui-types/src/sui_serde.rs)).
    - Split top-level type args by **bracket depth** (only the comma at depth 0), which also handles nested generics.
 2. **Address form differs by path — and the short-form set is a hardcoded list, not a numeric range.**
    - **gRPC** renders *every* type-tag address in **full 64-hex** (`StructTag::to_canonical_string(true)` — see [`crates/sui-rpc-api/src/grpc/v2/render.rs`](https://github.com/MystenLabs/sui/blob/main/crates/sui-rpc-api/src/grpc/v2/render.rs)). So SUI is `0x0000…0002::sui::SUI`.
