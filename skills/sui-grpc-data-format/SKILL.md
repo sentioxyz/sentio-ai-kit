@@ -69,8 +69,9 @@ Raw type strings carry two gRPC-vs-JSON-RPC differences. Do **not** write parser
 
 1. **No space after commas** in generic args. gRPC emits `Pool<A,B>`; JSON-RPC emitted `Pool<A, B>`. Regexes that relied on whitespace will mis-split.
    - Split top-level type args by **bracket depth** (only the comma at depth 0), which also handles nested generics.
-2. **Address representation differs.** gRPC renders every address in the **full 32-byte (64-hex) form** — `0x` + 64 hex chars (Sui guarantees address outputs are the full 66-char string). Earlier JSON-RPC strings could spell the same address with leading zeros stripped (e.g. `0x2::sui::SUI` vs `0x0000…0002::sui::SUI`). So the **same coin can appear with different address spellings across SDK versions / data sources**, and exact string equality is not reliable.
-   - If you need to compare type strings, or match against data produced under an older path, **normalize first** to a single canonical form. `@mysten/sui` provides `normalizeStructTag` / `normalizeSuiAddress` (both pad addresses to the full 64-hex form); run both sides through the same normalizer before comparing.
+2. **Special-address representation differs.** gRPC renders **every** address in the full 32-byte (64-hex) form — `0x` + 64 hex chars, including system addresses (so SUI is `0x0000…0002::sui::SUI`). The earlier JSON-RPC type strings render **special / system** addresses (`0x1`, `0x2`, `0x3`, …) in **short** form (`0x2::sui::SUI`) while keeping ordinary addresses full. (Verified against a live fullnode: in a JSON-RPC pool type, a normal coin like `0x027792…896881::coin::COIN` keeps its leading zero and full length, only the system address is shortened.) So for special-address coins the **same type can be spelled differently across the two paths**, and exact string equality is not reliable.
+   - To compare type strings, or match against data produced under the older path, **normalize both sides** with `@mysten/sui`'s `normalizeStructTag` / `normalizeSuiAddress`, which pad every address to the full 64-hex form.
+   - Do **not** "fix" this by hand-stripping leading zeros — that corrupts ordinary addresses (e.g. `0x027792…` → `0x27792…`). Only the canonical full form is safe; normalize, don't strip.
 
 ```ts
 // Extract top-level generic type args from a struct type string,
