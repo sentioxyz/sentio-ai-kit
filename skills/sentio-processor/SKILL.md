@@ -32,7 +32,7 @@ This skill follows a layered approach:
 4. **[references/store-and-points.md](references/store-and-points.md)** — Store schema advanced features (relationships, timeseries, indexes, iterators, filter operators)
 5. **[references/position-tracking-templates.md](references/position-tracking-templates.md)** — 10 protocol-specific points/position tracking templates (Simple Holding, Aave, Morpho, Vault/LP, Uni V3, Pendle, Compound, NFT, Uni V2, Uni V4)
 6. **[references/production-examples.md](references/production-examples.md)** — 7 complete production processor examples (Uniswap, AAVE, Cetus, LiquidSwap, Lombard points, Scallop)
-7. **[references/sui-sdk4-migration.md](references/sui-sdk4-migration.md)** — Migrating a Sui processor to SDK 4: gRPC vs JSON-RPC raw data shapes (transaction/object/event, protobuf oneof, Move type-string comma spacing + address form), with Sui source citations
+7. **[references/sui-sdk4-migration.md](references/sui-sdk4-migration.md)** — Upgrading to SDK 4: cross-chain breaking changes (dep bumps, Solana `@anchor-lang/core`, proto/RPC stack, dropped v3 back-compat) plus the Sui gRPC deep dive — raw data shapes (transaction/object/event, protobuf oneof, Move type-string comma spacing + address form), with Sui source citations
 
 ## Project Lifecycle
 
@@ -98,10 +98,10 @@ Recommend **yarn** over npm. With npm you may hit `BaseContract` / `DeferredTopi
     "test": "sentio test"
   },
   "dependencies": {
-    "@sentio/sdk": "^3.4.0"
+    "@sentio/sdk": "^4.0.0"
   },
   "devDependencies": {
-    "@sentio/cli": "^3.4.0",
+    "@sentio/cli": "^4.0.0",
     "typescript": "^5.4.5"
   }
 }
@@ -256,10 +256,15 @@ SuiObjectTypeProcessor.bind({ objectType: pool.Pool.type() })
 
 ### Solana
 
+On SDK 4, Solana uses `@anchor-lang/core` + `@solana/kit`. Import `BorshInstructionCoder` (and `Idl`/`Instruction`) from `@sentio/sdk/solana`, not from `@coral-xyz/anchor`:
+
 ```typescript
+import { SolanaGlobalProcessor } from '@sentio/sdk/solana'
+import { BorshInstructionCoder, type Idl } from '@sentio/sdk/solana'
+
 SolanaGlobalProcessor.bind({
   name: 'my-program',
-  instructionCoder: new Anchor.BorshInstructionCoder(idl),
+  instructionCoder: new BorshInstructionCoder(idl as Idl),
 }).onInstruction('transfer', async (instruction, ctx, accounts) => {
   ctx.meter.Counter('transfers').add(1)
 })
