@@ -32,6 +32,7 @@ This skill follows a layered approach:
 4. **[references/store-and-points.md](references/store-and-points.md)** — Store schema advanced features (relationships, timeseries, indexes, iterators, filter operators)
 5. **[references/position-tracking-templates.md](references/position-tracking-templates.md)** — 10 protocol-specific points/position tracking templates (Simple Holding, Aave, Morpho, Vault/LP, Uni V3, Pendle, Compound, NFT, Uni V2, Uni V4)
 6. **[references/production-examples.md](references/production-examples.md)** — 7 complete production processor examples (Uniswap, AAVE, Cetus, LiquidSwap, Lombard points, Scallop)
+7. **[references/sui-sdk4-migration.md](references/sui-sdk4-migration.md)** — Migrating a Sui processor to SDK 4: gRPC vs JSON-RPC raw data shapes (transaction/object/event, protobuf oneof, Move type-string comma spacing + address form), with Sui source citations
 
 ## Project Lifecycle
 

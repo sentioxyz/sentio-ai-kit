@@ -1,15 +1,12 @@
----
-name: sui-grpc-data-format
-description: Use when writing or upgrading a Sentio Sui processor on SDK 4 that touches RAW transaction / object / event structures — e.g. reading fields off `ctx.transaction`, walking programmable-transaction commands, decoding an object from `ctx.client.getObject`, or parsing Move type strings. On SDK 4 Sui chain data is fetched over gRPC, so these raw shapes follow the Sui gRPC protobuf schema and differ from the JSON-RPC shapes used by earlier SDK versions (field names, nesting, protobuf oneof unions, and type-string formatting). Not needed for typed handlers that only use `event.data_decoded`.
----
+# Migrating a Sui processor to SDK 4: gRPC vs JSON-RPC data shapes
 
-# Sui gRPC vs JSON-RPC raw data shapes (SDK 4)
+Use this when **upgrading a Sui processor to Sentio SDK 4**, or writing one that touches **raw** transaction / object / event structures (reading fields off `ctx.transaction`, walking programmable-transaction commands, decoding an object from `ctx.client.getObject`, or parsing Move type strings).
 
 ## Overview
 
-On **Sentio SDK 4**, Sui processors fetch on-chain data over **gRPC**. The decoded values from typed handlers are unchanged — the SDK normalizes them. But any code that reaches into **raw** transaction, event, or object structures now sees the **gRPC protobuf shapes**, which differ from the older JSON-RPC shapes in field names, nesting, `oneof` unions, and string formatting.
+On **SDK 4**, Sui processors fetch on-chain data over **gRPC**. The decoded values from typed handlers are unchanged — the SDK normalizes them. But any code that reaches into **raw** transaction, event, or object structures now sees the **gRPC protobuf shapes**, which differ from the older JSON-RPC shapes in field names, nesting, `oneof` unions, and string formatting.
 
-If you are upgrading a processor from an earlier SDK and it parses raw transactions / objects / Move type strings, those are the spots that need changes. A processor that only uses typed decoded values usually needs no code change (just regenerate bindings).
+If your processor parses raw transactions / objects / Move type strings, those are the spots that need changes. A processor that only uses typed decoded values usually needs no code change (just regenerate bindings).
 
 ## Authoritative schema — read the proto
 
