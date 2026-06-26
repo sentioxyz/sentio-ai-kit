@@ -67,7 +67,9 @@ sentio-ai-kit/
 │   │       ├── defi-patterns.md
 │   │       ├── store-and-points.md
 │   │       └── production-examples.md
-│   └── sentio-platform/
+│   ├── sentio-platform/
+│   │   └── SKILL.md
+│   └── sui-grpc-data-format/
 │       └── SKILL.md
 └── README.md
 ```
