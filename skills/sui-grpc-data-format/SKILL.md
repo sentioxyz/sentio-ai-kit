@@ -69,9 +69,21 @@ Raw type strings carry two gRPC-vs-JSON-RPC differences. Do **not** write parser
 
 1. **No space after commas** in generic args. gRPC emits `Pool<A,B>`; JSON-RPC emitted `Pool<A, B>`. Regexes that relied on whitespace will mis-split.
    - Split top-level type args by **bracket depth** (only the comma at depth 0), which also handles nested generics.
-2. **Special-address representation differs.** gRPC renders **every** address in the full 32-byte (64-hex) form — `0x` + 64 hex chars, including system addresses (so SUI is `0x0000…0002::sui::SUI`). The earlier JSON-RPC type strings render **special / system** addresses (`0x1`, `0x2`, `0x3`, …) in **short** form (`0x2::sui::SUI`) while keeping ordinary addresses full. (Verified against a live fullnode: in a JSON-RPC pool type, a normal coin like `0x027792…896881::coin::COIN` keeps its leading zero and full length, only the system address is shortened.) So for special-address coins the **same type can be spelled differently across the two paths**, and exact string equality is not reliable.
-   - To compare type strings, or match against data produced under the older path, **normalize both sides** with `@mysten/sui`'s `normalizeStructTag` / `normalizeSuiAddress`, which pad every address to the full 64-hex form.
-   - Do **not** "fix" this by hand-stripping leading zeros — that corrupts ordinary addresses (e.g. `0x027792…` → `0x27792…`). Only the canonical full form is safe; normalize, don't strip.
+2. **Address form differs by path — and the short-form set is a hardcoded list, not a numeric range.**
+   - **gRPC** renders *every* type-tag address in **full 64-hex** (`StructTag::to_canonical_string(true)` — see [`crates/sui-rpc-api/src/grpc/v2/render.rs`](https://github.com/MystenLabs/sui/blob/main/crates/sui-rpc-api/src/grpc/v2/render.rs)). So SUI is `0x0000…0002::sui::SUI`.
+   - **JSON-RPC** short-forms (leading zeros stripped) **only** the addresses in a hardcoded `SUI_ADDRESSES` set and renders all others full 64-hex — see `to_sui_struct_tag_string` in [`crates/sui-types/src/sui_serde.rs`](https://github.com/MystenLabs/sui/blob/main/crates/sui-types/src/sui_serde.rs):
+     ```rust
+     let address = if SUI_ADDRESSES.contains(&value.address) {
+         value.address.short_str_lossless()                          // framework addrs → short (0x2)
+     } else {
+         value.address.to_canonical_string(/* with_prefix */ false)  // everything else → full 64-hex
+     };
+     ```
+     `SUI_ADDRESSES` is exactly 7 framework/system addresses: `0x0`, `0x1`, `0x2` (framework), `0x3` (system), `0x5` (system state), `0x6` (clock), `0xdee9` (DeepBook). This is an explicit list — note DeepBook `0xdee9` is short despite being far above `0xf`, so it is **not** the "addresses 0x0–0xf are special" rule from other Move chains.
+
+   So the same coin's type can be spelled differently across paths — `0x2::sui::SUI` (JSON-RPC) vs `0x0000…0002::sui::SUI` (gRPC) — and exact string equality is unreliable.
+   - To compare or match type strings across paths, **normalize both sides** with `@mysten/sui`'s `normalizeStructTag` / `normalizeSuiAddress`, which pad every address to the full 64-hex form.
+   - Do **not** hand-strip leading zeros to bridge the gap (it corrupts ordinary addresses, e.g. `0x027792…` → `0x27792…`), and don't assume a numeric "special range" — Sui uses the explicit `SUI_ADDRESSES` list above.
 
 ```ts
 // Extract top-level generic type args from a struct type string,
