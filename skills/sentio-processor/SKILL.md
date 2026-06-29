@@ -85,8 +85,6 @@ After upload, use `sentio processor status --project <owner>/<slug>` to check th
 
 ## package.json
 
-Recommend **yarn** over npm. With npm you may hit `BaseContract` / `DeferredTopicFilter` type conflicts (TS2344 due to duplicate ethers).
-
 ```json
 {
   "name": "project-name",
@@ -102,13 +100,16 @@ Recommend **yarn** over npm. With npm you may hit `BaseContract` / `DeferredTopi
   },
   "devDependencies": {
     "@sentio/cli": "^4.0.0",
-    "typescript": "^5.4.5"
+    "typescript": "^6.0.3"
   }
 }
 ```
 
-If using npm and hitting ethers type conflicts, add:
+**ethers:** SDK 4 uses **upstream `ethers` 6.x** — the old `@sentio/ethers` fork has been dropped. Do **not** pin or override `ethers` to `@sentio/ethers`. When migrating an older project, **remove** any leftover override such as:
+
 ```json
+// ❌ remove this from older projects — it reintroduces the fork and causes
+//    duplicate-ethers type conflicts (BaseContract / DeferredTopicFilter, TS2344)
 "overrides": {
   "ethers": "npm:@sentio/ethers@6.13.1-patch.4"
 }
