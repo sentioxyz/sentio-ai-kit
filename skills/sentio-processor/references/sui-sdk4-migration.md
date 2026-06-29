@@ -6,12 +6,45 @@ Use this when **upgrading a Sui processor to Sentio SDK 4**, or writing one that
 
 Most of this doc covers the Sui gRPC raw-data shapes, which are the largest source of processor code changes. But SDK 4 is a breaking major across the board, so an upgrade also involves:
 
-- **Bump deps to `^4.0.0`.** Set both `@sentio/sdk` and `@sentio/cli` to `^4.0.0` (the `latest` npm tag is now `4.x`), then `sentio gen` to regenerate bindings.
+- **Bump deps to `^4.0.0`.** Set `@sentio/sdk`, `@sentio/cli` (and `@sentio/action` if used) to `^4.0.0` (the `latest` npm tag is now `4.x`), then `sentio gen` to regenerate bindings.
+- **TypeScript 6 / `strictFunctionTypes` — the silent store-killer.** SDK 4's `sentio create` template pins `typescript@^6.0.3`, where `strict` (hence `strictFunctionTypes`) is on by default. The generated entity classes rely on `strictFunctionTypes` for `ctx.store.get(MyEntity, id)` to infer the concrete entity type; without it, `get`'s generic falls back to its `AbstractEntity` constraint, so `(await ctx.store.get(MyEntity, id))?.someField` fails to type-check in **every** store-using project (`Property 'someField' does not exist on type 'AbstractEntity'`). If you bump the SDK but stay on TypeScript 5.x, add `"strictFunctionTypes": true` to each project's `tsconfig.json`. (Going straight to TS 6 without `"strict": false` also flips on `strictPropertyInitialization` → TS2564 on generated entity fields, and `useUnknownInCatchVariables` → `catch (e) { e.message }` breaks; enabling only `strictFunctionTypes` on TS 5.x is the lowest-churn fix.)
+- **Drop the `@sentio/ethers` fork.** Remove any `resolutions`/`overrides` pinning `@sentio/ethers`; SDK 4 uses upstream `ethers` 6. Side effect: some non-standard receipt fields are gone from ethers' types — e.g. an OP-stack L2 `ctx.transactionReceipt.l1Fee` now needs a cast (`(ctx.transactionReceipt as any)?.l1Fee`).
 - **Solana migrated to `@anchor-lang/core` + `@solana/kit`.** If your processor decodes instructions with an Anchor coder, import `BorshInstructionCoder` / `Idl` / `Instruction` from `@sentio/sdk/solana` instead of `@coral-xyz/anchor` (`import { BorshInstructionCoder, type Idl } from '@sentio/sdk/solana'`).
 - **Proto/RPC stack swapped to protobuf-es + connect-es** (from ts-proto + nice-grpc). This is internal to the runtime, but if you import directly from `@sentio/protos` (e.g. constructing proto messages in tests), the API changed: `create(FooSchema, init)` instead of `Foo.fromPartial`, `toBinary`/`fromBinary`/`fromJson(FooSchema, …)` for (de)serialization, and `oneof` fields are discriminated unions.
 - **The v3 back-compat layer is gone.** The SDK 4 runtime no longer patches old (v3) processor shapes and drops deprecated proto fields, so a v3 processor won't run unmodified on a v4 driver — you must actually migrate, not just rely on the runtime papering over differences.
 
-The rest of this doc is the Sui-specific deep dive.
+The rest of this doc is the Sui-specific deep dive; the cross-chain gotchas below were verified across a ~250-project monorepo migration.
+
+## Cross-chain gotchas (verified in a large migration)
+
+### Re-fetch Sui (and Fuel) ABIs — the cache is the wrong format
+SDK 4 Sui codegen consumes ABIs in the new gRPC **array** format. Old cached `abis/sui/*.json` (the JSON-RPC normalized-module shape — often an object keyed by module name) make `sentio gen` throw `TypeError: modules.map is not a function` or `Cannot read properties of undefined (reading 'datatypes')`. Fix:
+1. `rm -f abis/sui/*.json`, then `sentio gen` — re-downloads every `sentio.yaml` address (plus dependents) in the new format. Needs network.
+2. **Named modules** added via `sentio add --name foo <addr>` live in `abis/sui/foo.json`, are imported as `./types/sui/foo.js`, and are usually **not** listed in `sentio.yaml` — so step 1 won't regenerate them. Re-add each: `sentio add --chain sui_mainnet --name foo <package-address>` (the package address is inside the old cached ABI). Codegen runs `modules.map` over *every* file in `abis/sui`, so it keeps failing until all stale files are refreshed.
+
+Fuel has the analogous problem: an old Fuel ABI JSON lacking `specVersion` / `encodingVersion` / `programType` / `concreteTypes` / `metadataTypes` breaks Fuel codegen and must be regenerated from the Sway source (there may be no on-chain address to re-fetch from).
+
+### Aptos: `MoveFetchConfig` is a protobuf-es message now
+A literal like `const cfg: MoveFetchConfig = { resourceChanges: true, resourceConfig: { moveTypePrefix } }` fails because the nested `ResourceConfig` is a protobuf-es `Message` requiring `$typeName`. Either drop the explicit `: MoveFetchConfig` annotation and add `$typeName: "processor.ResourceConfig"` to the nested object (handler params accept `HandlerOptions<MoveFetchConfig, T>`, which already omits the *top-level* `$typeName`), or build it with `create(MoveFetchConfigSchema, {…})` (`create` from `@bufbuild/protobuf`, `MoveFetchConfigSchema` from `@sentio/protos`).
+
+### Tests: `processBindings` data is a protobuf-es oneof
+Raw test bindings change from the old ts-proto key style to the discriminated-union style:
+```ts
+// before
+data: { aptEvent: { rawTransaction, rawEvent, eventIndex } }
+// after
+data: { value: { case: "aptEvent", value: { rawTransaction, rawEvent, eventIndex } } }
+```
+
+### More Sui `ctx.client` changes (beyond the tables below)
+- `getCoinMetadata({ coinType })` now returns `{ coinMetadata: CoinMetadata | null }` — read `.coinMetadata?.symbol` / `.decimals` / `.name` (the metadata was returned directly before).
+- `getObject(...)` returns `{ object }`; read `obj.object.type` and `obj.object.json` (see the Object section below).
+- `multiGetObjects({ ids, options })` → `getObjects({ objectIds, include })`, returning `{ objects }`.
+- `getDynamicFieldObject` → `getDynamicField`.
+- `@mysten/sui/client` no longer exports `SuiMoveObject` / `SuiObjectChange` / `SuiTransactionBlockResponse`; the typed object input `SuiMoveObjectInput` has no `.fields` (use `.json`, or `data_decoded` for typed handlers).
+
+### Watch out for `// @ts-nocheck`
+A file with `// @ts-nocheck` passes `tsc` even when its raw-data access is still in the old JSON-RPC shape — so it compiles but returns `undefined` / throws at runtime. When migrating, grep the whole repo for `getObject({ id`, `.data.content.fields`, and `.parsedJson` — not just the files `tsc` flags.
 
 ## Overview
 
