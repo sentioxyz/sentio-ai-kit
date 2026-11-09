@@ -2259,6 +2259,9 @@
     },
     "common.Organization": {
       "properties": {
+        "banned": {
+          "type": "boolean"
+        },
         "createdAt": {
           "format": "int64",
           "type": "string"
